@@ -1,0 +1,355 @@
+================================================================================
+      AI EXPENSE TRACKER — BACKEND STRUCTURE & CONNECTION EXPLAINED
+================================================================================
+Project: AI-Powered Expense Tracker (Student & Professional Mode)
+Backend:  Python / Flask REST API  →  Port 5000
+Frontend: React + TypeScript (Vite)  →  Port 3000
+Database: SQLite (file-based, auto-created)
+AI Layer: Google Gemini 1.5 Flash
+================================================================================
+
+
+════════════════════════════════════════════════════════════════════════════════
+SECTION 1 — HOW FRONTEND CONNECTS TO BACKEND
+════════════════════════════════════════════════════════════════════════════════
+
+  [Browser / React App]  ──── HTTP REST API calls ────►  [Flask Server]
+  http://localhost:3000                                   http://localhost:5000
+
+  Every time the React frontend needs data (e.g., load dashboard, add expense,
+  get AI insight), it sends an HTTP request to the Flask backend.
+
+  Connection Flow:
+  ─────────────────
+  1. User opens http://localhost:3000 in browser
+  2. React app loads (Vite serves the HTML/JS/CSS)
+  3. On login, React sends POST to http://localhost:5000/api/auth/login
+  4. Flask returns a JWT (JSON Web Token) — a secure identity key
+  5. React stores this token in memory / localStorage
+  6. Every next request sends this token in the Header:
+       Authorization: Bearer <jwt_token>
+  7. Flask verifies the token and returns the requested data as JSON
+  8. React displays the data to the user
+
+  CORS (Cross-Origin Resource Sharing):
+  ─────────────────────────────────────
+  Since React runs on port 3000 and Flask on port 5000, the browser would
+  normally block the request (different origins). Flask-CORS is configured to
+  explicitly ALLOW requests from:
+    - http://localhost:3000
+    - http://127.0.0.1:3000
+    - http://localhost:5173
+
+
+════════════════════════════════════════════════════════════════════════════════
+SECTION 2 — BACKEND FOLDER STRUCTURE
+════════════════════════════════════════════════════════════════════════════════
+
+  Backend/
+  ├── run.py                  ← Entry point. Starts the Flask server on port 5000.
+  │                             Creates all database tables on first run.
+  ├── .env                    ← Secret keys & config (API keys, DB URL, JWT key)
+  ├── requirements.txt        ← Python packages needed
+  ├── seed.py                 ← (Optional) Populate DB with sample data
+  │
+  └── app/
+      ├── __init__.py         ← App Factory: creates Flask app, registers all blueprints
+      ├── config.py           ← Configuration classes (Dev / Test / Production)
+      │
+      ├── models/             ← DATABASE TABLES (SQLAlchemy ORM)
+      │   ├── user.py
+      │   ├── transaction.py
+      │   ├── budget.py
+      │   ├── savings_goal.py
+      │   ├── emergency_fund.py
+      │   ├── subscription.py
+      │   ├── income_source.py
+      │   ├── project.py
+      │   ├── semester_budget.py
+      │   └── ai_insight.py
+      │
+      ├── routes/             ← API ENDPOINTS (what the frontend calls)
+      │   ├── auth.py           → /api/auth/...
+      │   ├── users.py          → /api/users/...
+      │   ├── transactions.py   → /api/transactions/...
+      │   ├── dashboard.py      → /api/dashboard/...
+      │   ├── budgets.py        → /api/budgets/...
+      │   ├── savings.py        → /api/savings-goals/...
+      │   ├── emergency.py      → /api/emergency-fund/...
+      │   ├── subscriptions.py  → /api/subscriptions/...
+      │   ├── income.py         → /api/income/...
+      │   ├── projects.py       → /api/projects/...
+      │   ├── semester.py       → /api/semester-budget/...
+      │   ├── analytics.py      → /api/analytics/...
+      │   ├── insights.py       → /api/insights/...
+      │   ├── predictions.py    → /api/predictions/...
+      │   ├── receipts.py       → /api/receipts/...
+      │   └── voice.py          → /api/voice/...
+      │
+      ├── services/           ← BUSINESS LOGIC (heavy lifting)
+      │   ├── ai_service.py     → Gemini AI calls, insight generation, voice parsing
+      │   ├── ocr_service.py    → Receipt image scanning (Google Cloud Vision)
+      │   └── voice_service.py  → Voice-to-text expense parsing
+      │
+      ├── ml/                 ← MACHINE LEARNING (spending predictions)
+      │   └── ...               → scikit-learn models for expense forecasting
+      │
+      └── utils/              ← HELPERS
+          ├── auth.py           → JWT decorators (require_auth), helper functions
+          └── calculations.py   → Date ranges, budget math
+
+
+════════════════════════════════════════════════════════════════════════════════
+SECTION 3 — DATABASE MODELS (Tables in SQLite)
+════════════════════════════════════════════════════════════════════════════════
+
+  TABLE: users
+  ─────────────────────────────────────────────────────────
+  Field              Type        Description
+  ─────────────────  ─────────── ──────────────────────────
+  id                 UUID        Primary key (auto-generated)
+  email              String      Unique login email
+  name               String      Full name
+  initials           String      e.g. "JD" for John Doe
+  role               String      "student" OR "professional"
+  password_hash      String      Bcrypt hashed password
+  monthly_allowance  Decimal     ₹30,000 (student) / ₹85,000 (professional)
+  created_at         DateTime    Registration time
+
+  TABLE: transactions
+  ─────────────────────────────────────────────────────────
+  Field              Type        Description
+  ─────────────────  ─────────── ──────────────────────────
+  id                 UUID        Primary key
+  user_id            UUID        Foreign key → users.id
+  type               String      "expense" or "income"
+  name               String      Expense description
+  amount             Decimal     Amount in INR
+  category           String      Food / Travel / Education / Bills / Health /
+                                 Shopping / Subscription / Entertainment / Other
+  payment_method     String      UPI / Cash / Card / Net Banking
+  date               DateTime    When the expense occurred
+  color              String      Display color tag (coral / cyan / violet / mint)
+  notes              Text        Optional notes
+
+  TABLE: budgets
+  ─────────────────────────────────────────────────────────
+  Field              Type        Description
+  ─────────────────  ─────────── ──────────────────────────
+  id                 UUID        Primary key
+  user_id            UUID        Foreign key → users.id
+  category           String      Budget category (e.g. Food)
+  limit_amount       Decimal     Monthly spending limit
+  color              String      Display color
+  month              Integer     Month number (1–12)
+  year               Integer     Year (e.g. 2026)
+
+  TABLE: savings_goals
+  ─────────────────────────────────────────────────────────
+  Field              Type        Description
+  ─────────────────  ─────────── ──────────────────────────
+  id                 UUID        Primary key
+  user_id            UUID        Foreign key → users.id
+  name               String      Goal name (e.g. "New Laptop")
+  target_amount      Decimal     How much to save total
+  current_amount     Decimal     How much saved so far
+  deadline           Date        Target deadline
+  (computed)         Integer     percent_complete = current / target × 100
+
+  TABLE: emergency_fund
+  ─────────────────────────────────────────────────────────
+  Tracks user's emergency fund balance and contributions history.
+
+  TABLE: subscriptions
+  ─────────────────────────────────────────────────────────
+  Recurring payments (Netflix, Spotify, etc.) with billing cycle tracking.
+
+  TABLE: income_sources
+  ─────────────────────────────────────────────────────────
+  Multiple income streams (Salary, Freelance, Allowance, etc.)
+
+  TABLE: projects
+  ─────────────────────────────────────────────────────────
+  Project-based expense tracking with budget allocation per project.
+
+  TABLE: semester_budgets
+  ─────────────────────────────────────────────────────────
+  Student-specific: semester-wide budget planning (tuition, hostel, books, etc.)
+
+  TABLE: ai_insights
+  ─────────────────────────────────────────────────────────
+  Stores AI-generated financial insights so they are not regenerated every time.
+
+
+════════════════════════════════════════════════════════════════════════════════
+SECTION 4 — ALL API ENDPOINTS
+════════════════════════════════════════════════════════════════════════════════
+
+  Authentication (No token required)
+  ────────────────────────────────────────────────────────
+  POST  /api/auth/register    → Create new account (name, email, password, role)
+  POST  /api/auth/login       → Login → returns JWT token
+  POST  /api/auth/logout      → Logout (token required)
+  GET   /api/auth/me          → Get current logged-in user profile
+
+  Transactions (Token required)
+  ────────────────────────────────────────────────────────
+  GET   /api/transactions          → List all transactions (with filters)
+  POST  /api/transactions          → Add new transaction
+  PUT   /api/transactions/<id>     → Edit a transaction
+  DELETE /api/transactions/<id>    → Delete a transaction
+
+  Dashboard
+  ────────────────────────────────────────────────────────
+  GET   /api/dashboard/student       → Student dashboard summary
+  GET   /api/dashboard/professional  → Professional dashboard summary
+
+  Budgets
+  ────────────────────────────────────────────────────────
+  GET   /api/budgets           → List monthly budgets
+  POST  /api/budgets           → Create budget for a category
+  PUT   /api/budgets/<id>      → Update budget limit
+  DELETE /api/budgets/<id>     → Remove budget
+
+  Savings Goals
+  ────────────────────────────────────────────────────────
+  GET   /api/savings-goals         → List all goals
+  POST  /api/savings-goals         → Create new goal
+  PUT   /api/savings-goals/<id>    → Update goal / add contribution
+  DELETE /api/savings-goals/<id>   → Delete goal
+
+  Emergency Fund
+  ────────────────────────────────────────────────────────
+  GET   /api/emergency-fund        → Get fund balance
+  POST  /api/emergency-fund        → Create / initialize fund
+  POST  /api/emergency-fund/contribute  → Add money to fund
+
+  Subscriptions
+  ────────────────────────────────────────────────────────
+  GET   /api/subscriptions         → List all subscriptions
+  POST  /api/subscriptions         → Add subscription
+  PUT   /api/subscriptions/<id>    → Edit subscription
+  DELETE /api/subscriptions/<id>   → Remove subscription
+
+  Income Sources
+  ────────────────────────────────────────────────────────
+  GET   /api/income                → List income sources
+  POST  /api/income                → Add income source
+  DELETE /api/income/<id>          → Remove income source
+
+  Analytics
+  ────────────────────────────────────────────────────────
+  GET   /api/analytics/spending    → Category-wise spending breakdown
+  GET   /api/analytics/trends      → Monthly spending trends
+
+  AI Features
+  ────────────────────────────────────────────────────────
+  GET   /api/insights              → Get AI-generated financial insight (Gemini)
+  GET   /api/predictions           → ML-based spending prediction (scikit-learn)
+  POST  /api/receipts/scan         → OCR scan uploaded receipt image
+  POST  /api/voice/parse           → Parse voice text into structured expense
+
+  System
+  ────────────────────────────────────────────────────────
+  GET   /api/health                → Health check → {"status": "ok"}
+
+
+════════════════════════════════════════════════════════════════════════════════
+SECTION 5 — AUTHENTICATION FLOW (JWT)
+════════════════════════════════════════════════════════════════════════════════
+
+  Step 1: User registers or logs in
+          POST /api/auth/login
+          Body: { "email": "...", "password": "..." }
+
+  Step 2: Server validates credentials and returns:
+          { "data": { "token": "eyJhbGci...", "user": { ... } } }
+
+  Step 3: Frontend stores the token
+
+  Step 4: Every protected request includes:
+          Header: Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5...
+
+  Step 5: Flask decodes the token using Flask-JWT-Extended
+          → Extracts user ID and role from token payload
+          → If token is valid: returns requested data
+          → If token is invalid/expired: returns 401 Unauthorized
+
+  Token Expiry: 7 days (configured in config.py)
+  Algorithm:    HS256 (HMAC-SHA256)
+
+
+════════════════════════════════════════════════════════════════════════════════
+SECTION 6 — AI & ML FEATURES
+════════════════════════════════════════════════════════════════════════════════
+
+  A) AI INSIGHTS (Google Gemini 1.5 Flash)
+  ──────────────────────────────────────────
+  How it works:
+  1. Backend collects user's financial summary:
+     - Total spent this month
+     - Top spending category
+     - Monthly budget vs actual spending
+     - Average savings goal progress (%)
+  2. Sends this as a prompt to Google Gemini API
+  3. Gemini returns a personalized financial tip as JSON
+  4. Response is stored in ai_insights table (cached)
+  5. Displayed on the Insights page in the app
+
+  Fallback: If GEMINI_API_KEY is not set, a random pre-written insight is shown.
+
+  B) VOICE EXPENSE PARSING (Gemini)
+  ──────────────────────────────────────────
+  User speaks: "I spent 250 rupees on lunch today"
+  Backend sends this text to Gemini →
+  Gemini returns: { "name": "Lunch", "amount": 250, "category": "Food" }
+  This is automatically filled into the add-expense form.
+
+  C) RECEIPT OCR (Google Cloud Vision)
+  ──────────────────────────────────────────
+  User uploads a photo of a bill/receipt →
+  Google Cloud Vision reads the text →
+  Amount and merchant name are extracted →
+  Auto-fills the expense form.
+
+  D) ML SPENDING PREDICTION (scikit-learn)
+  ──────────────────────────────────────────
+  Analyzes past transaction history →
+  Predicts likely spending for next month per category →
+  Shown on the Predictions / Analytics page.
+
+
+════════════════════════════════════════════════════════════════════════════════
+SECTION 7 — TECHNOLOGY STACK SUMMARY
+════════════════════════════════════════════════════════════════════════════════
+
+  Layer           Technology              Purpose
+  ─────────────── ─────────────────────── ─────────────────────────────────────
+  Frontend        React 19 + TypeScript   UI components and page logic
+  Routing         Wouter                  Client-side page navigation
+  UI Components   Radix UI + shadcn/ui    Accessible, styled UI components
+  Styling         Tailwind CSS v4         Utility-first styling
+  Charts          Recharts                Spending charts and graphs
+  Animation       Framer Motion           Smooth UI transitions
+  Forms           React Hook Form + Zod   Form handling and validation
+  HTTP Client     Axios                   API calls to Flask backend
+  Build Tool      Vite 7                  Fast dev server and bundler
+  ─────────────── ─────────────────────── ─────────────────────────────────────
+  Backend         Python 3.13 + Flask     REST API server
+  ORM             SQLAlchemy              Database access layer
+  Database        SQLite                  File-based database (no setup needed)
+  Auth            Flask-JWT-Extended      JWT token authentication
+  CORS            Flask-CORS              Allow cross-origin React requests
+  Migrations      Flask-Migrate           Database schema versioning
+  AI              Google Gemini 1.5 Flash Insights + voice parsing
+  OCR             Google Cloud Vision     Receipt scanning
+  ML              scikit-learn + numpy    Spending prediction model
+  ─────────────── ─────────────────────── ─────────────────────────────────────
+  Dev Tools       Playwright              Browser automation & testing
+                  pytest + pytest-flask   Backend unit testing
+
+
+================================================================================
+END OF DOCUMENT
+Generated for: AI Expense Tracker Project
+================================================================================

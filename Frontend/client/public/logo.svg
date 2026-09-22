@@ -1,0 +1,103 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0B132B" />
+      <stop offset="50%" stop-color="#1C2541" />
+      <stop offset="100%" stop-color="#0A1128" />
+    </linearGradient>
+
+    <!-- Vibrant Mint & Cyan Gradient -->
+    <linearGradient id="mintGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38EF7D" />
+      <stop offset="50%" stop-color="#11998E" />
+      <stop offset="100%" stop-color="#00F2FE" />
+    </linearGradient>
+
+    <!-- Indigo Violet Tech Gradient -->
+    <linearGradient id="indigoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#818CF8" />
+      <stop offset="100%" stop-color="#6366F1" />
+    </linearGradient>
+
+    <!-- Golden Coin Accent Gradient -->
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FCD34D" />
+      <stop offset="100%" stop-color="#F59E0B" />
+    </linearGradient>
+
+    <!-- Glow Filter -->
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="6" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+
+    <!-- Intense Glow for Highlights -->
+    <filter id="intenseGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="10" result="blur2" />
+      <feComposite in="SourceGraphic" in2="blur2" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Outer Neon Glow Ring -->
+  <circle cx="100" cy="100" r="88" stroke="url(#mintGrad)" stroke-width="3" stroke-dasharray="14 10" opacity="0.85" filter="url(#glow)">
+    <animateTransform attributeName="transform" type="rotate" from="0 100 100" to="360 100 100" dur="20s" repeatCount="indefinite" />
+  </circle>
+
+  <!-- Secondary Counter-Rotating Accent Ring -->
+  <circle cx="100" cy="100" r="80" stroke="url(#indigoGrad)" stroke-width="1.5" stroke-dasharray="6 14" opacity="0.6">
+    <animateTransform attributeName="transform" type="rotate" from="360 100 100" to="0 100 100" dur="15s" repeatCount="indefinite" />
+  </circle>
+
+  <!-- Main Rounded Hexagon / Squircle Base -->
+  <rect x="25" y="25" width="150" height="150" rx="42" fill="url(#bgGrad)" stroke="#2A3859" stroke-width="2" />
+  
+  <!-- Subtle Internal Glow Grid / Overlay -->
+  <rect x="25" y="25" width="150" height="150" rx="42" fill="url(#mintGrad)" opacity="0.06" />
+
+  <!-- Inner High-tech AI Financial Shield / Chart Dynamic Symbol -->
+  <!-- Ascending Bar 1 (Left - Blue/Cyan) -->
+  <rect x="52" y="102" width="18" height="42" rx="9" fill="url(#indigoGrad)">
+    <animate attributeName="height" values="42;48;40;42" dur="3s" repeatCount="indefinite" />
+    <animate attributeName="y" values="102;96;104;102" dur="3s" repeatCount="indefinite" />
+  </rect>
+
+  <!-- Ascending Bar 2 (Middle - Emerald/Mint) -->
+  <rect x="76" y="80" width="18" height="64" rx="9" fill="url(#mintGrad)" filter="url(#glow)">
+    <animate attributeName="height" values="64;72;60;64" dur="2.4s" repeatCount="indefinite" />
+    <animate attributeName="y" values="80;72;84;80" dur="2.4s" repeatCount="indefinite" />
+  </rect>
+
+  <!-- Ascending Bar 3 / Arrow Peak (Right - Gold/Cyan) -->
+  <rect x="100" y="58" width="18" height="86" rx="9" fill="url(#mintGrad)">
+    <animate attributeName="height" values="86;92;82;86" dur="2.8s" repeatCount="indefinite" />
+    <animate attributeName="y" values="58;52;62;58" dur="2.8s" repeatCount="indefinite" />
+  </rect>
+
+  <!-- Futuristic AI Neural Growth Path / Lightning Line -->
+  <path d="M 50 110 L 80 88 L 112 64 L 148 42" stroke="url(#mintGrad)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)">
+    <animate attributeName="stroke-width" values="5;6.5;5" dur="2s" repeatCount="indefinite" />
+  </path>
+
+  <!-- Glowing AI Star Sparkle at Apex -->
+  <g transform="translate(148, 42)">
+    <circle cx="0" cy="0" r="9" fill="#00F2FE" filter="url(#intenseGlow)">
+      <animate attributeName="r" values="7;11;7" dur="1.8s" repeatCount="indefinite" />
+    </circle>
+    <path d="M 0 -14 L 3 -4 L 13 0 L 3 4 L 0 14 L -3 4 L -13 0 L -3 -4 Z" fill="#FFFFFF" filter="url(#glow)">
+      <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="8s" repeatCount="indefinite" />
+    </path>
+  </g>
+
+  <!-- Indian Rupee / Global Currency Modern Tech Ring Accent -->
+  <circle cx="134" cy="120" r="18" fill="#1C2541" stroke="url(#goldGrad)" stroke-width="2.5" filter="url(#glow)" />
+  <text x="134" y="127" font-family="system-ui, -apple-system, sans-serif" font-weight="900" font-size="19" fill="url(#goldGrad)" text-anchor="middle">₹</text>
+
+  <!-- Floating AI Particle Beacons -->
+  <circle cx="56" cy="50" r="3" fill="#38EF7D" filter="url(#glow)">
+    <animate attributeName="opacity" values="0.3;1;0.3" dur="2.1s" repeatCount="indefinite" />
+  </circle>
+  <circle cx="152" cy="150" r="2.5" fill="#818CF8" filter="url(#glow)">
+    <animate attributeName="opacity" values="0.8;0.2;0.8" dur="1.7s" repeatCount="indefinite" />
+  </circle>
+</svg>

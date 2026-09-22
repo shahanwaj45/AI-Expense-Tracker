@@ -1,0 +1,50 @@
+# Environment variables and API keys (CRITICAL: Do NOT push secrets to GitHub)
+.env
+.env.*
+!.env.example
+*.env
+
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.coverage
+htmlcov/
+*.egg-info/
+.eggs/
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+instance/
+
+# Node.js / Frontend dependencies and builds
+node_modules/
+.pnpm-store/
+dist/
+build/
+*.dist
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.eslintcache
+
+# Redundant nested zip extraction folder
+AI-Expenser-Tracker-main/
+
+# OS and IDE files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo

@@ -1,4 +1,4 @@
-﻿import uuid
+import uuid
 from datetime import datetime
 from app import db
 
@@ -27,6 +27,8 @@ class SavingsGoal(db.Model):
             'name': self.name,
             'current': float(self.current_amount),
             'target': float(self.target_amount),
+            'current_amount': float(self.current_amount),
+            'target_amount': float(self.target_amount),
             'percentComplete': self.percent_complete,
             'deadline': self.deadline.isoformat() if self.deadline else None,
         }

@@ -32,11 +32,11 @@ def get_fund():
 def update_fund():
     user = get_current_user()
     ef = _get_or_create_fund(user)
-    data = request.get_json()
+    data = request.get_json() or {}
     if 'current_amount' in data:
-        ef.current_amount = float(data['current_amount'])
+        ef.current_amount = max(0.0, float(data['current_amount']))
     if 'monthly_expense_estimate' in data:
-        ef.monthly_expense_estimate = float(data['monthly_expense_estimate'])
+        ef.monthly_expense_estimate = max(0.0, float(data['monthly_expense_estimate']))
     db.session.commit()
     return success_response(ef.to_dict())
 
@@ -45,7 +45,7 @@ def update_fund():
 def contribute():
     user = get_current_user()
     ef = _get_or_create_fund(user)
-    data = request.get_json()
+    data = request.get_json() or {}
     try:
         amount = float(data.get('amount', 0))
         if amount <= 0:
@@ -54,6 +54,26 @@ def contribute():
         return error_response('Invalid amount')
     ef.current_amount = float(ef.current_amount) + amount
     contrib = EmergencyFundContribution(fund_id=ef.id, amount=amount)
+    db.session.add(contrib)
+    db.session.commit()
+    return success_response(ef.to_dict())
+
+@emergency_bp.route('/withdraw', methods=['POST'])
+@require_auth
+def withdraw():
+    user = get_current_user()
+    ef = _get_or_create_fund(user)
+    data = request.get_json() or {}
+    try:
+        amount = float(data.get('amount', 0))
+        if amount <= 0:
+            return error_response('Amount must be > 0')
+        if amount > float(ef.current_amount):
+            return error_response(f'Withdrawal amount exceeds available balance of ₹{float(ef.current_amount):,.0f}')
+    except (TypeError, ValueError):
+        return error_response('Invalid amount')
+    ef.current_amount = float(ef.current_amount) - amount
+    contrib = EmergencyFundContribution(fund_id=ef.id, amount=-amount)
     db.session.add(contrib)
     db.session.commit()
     return success_response(ef.to_dict())

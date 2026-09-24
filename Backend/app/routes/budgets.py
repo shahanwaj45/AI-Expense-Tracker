@@ -72,15 +72,35 @@ def list_budgets():
 @require_auth
 def create_budget():
     user = get_current_user()
-    data = request.get_json()
+    data = request.get_json() or {}
     now = datetime.utcnow()
+    category = data.get('category', 'Other').strip()
+    month = int(data.get('month', now.month))
+    year = int(data.get('year', now.year))
+    limit_amount = float(data.get('limit_amount', 0))
+    color = data.get('color', '#7BE2BE')
+
+    existing = Budget.query.filter_by(
+        user_id=user.id,
+        category=category,
+        month=month,
+        year=year
+    ).first()
+
+    if existing:
+        existing.limit_amount = limit_amount
+        if color:
+            existing.color = color
+        db.session.commit()
+        return success_response(existing.to_dict(), status=200)
+
     b = Budget(
         user_id=user.id,
-        category=data.get('category', 'Other'),
-        limit_amount=float(data.get('limit_amount', 0)),
-        color=data.get('color', '#7BE2BE'),
-        month=int(data.get('month', now.month)),
-        year=int(data.get('year', now.year))
+        category=category,
+        limit_amount=limit_amount,
+        color=color,
+        month=month,
+        year=year
     )
     db.session.add(b)
     db.session.commit()

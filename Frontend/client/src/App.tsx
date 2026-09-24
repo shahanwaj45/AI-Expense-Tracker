@@ -68,6 +68,9 @@ function Router() {
       <Route path="/student/emergency-fund">
         <ProtectedRoute allowedRole="student"><EmergencyFund /></ProtectedRoute>
       </Route>
+      <Route path="/student/predictions">
+        <ProtectedRoute allowedRole="student"><Predictions /></ProtectedRoute>
+      </Route>
       <Route path="/student/ai-insights">
         <ProtectedRoute allowedRole="student"><AIInsights /></ProtectedRoute>
       </Route>

@@ -1,4 +1,4 @@
-﻿import uuid
+import uuid
 from datetime import datetime
 from app import db
 
@@ -37,6 +37,7 @@ class EmergencyFund(db.Model):
             'id': self.id,
             'current': float(self.current_amount),
             'recommended': self.recommended_amount,
+            'monthly_expense_estimate': float(self.monthly_expense_estimate),
             'monthsCovered': self.months_covered,
             'percentComplete': self.percent_complete,
         }

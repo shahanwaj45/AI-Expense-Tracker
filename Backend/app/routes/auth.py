@@ -87,3 +87,24 @@ def me():
     if not user:
         return error_response('User not found', 'NOT_FOUND', status=404)
     return success_response(user.to_dict())
+
+@auth_bp.route('/change-password', methods=['POST'])
+@require_auth
+def change_password():
+    user = get_current_user()
+    data = request.get_json() or {}
+    current_password = data.get('current_password', '')
+    new_password = data.get('new_password', '')
+    
+    if not current_password or not new_password:
+        return error_response('Current password and new password are required', 'VALIDATION_ERROR')
+    
+    if not user.check_password(current_password):
+        return error_response('Current password is incorrect', 'INVALID_CREDENTIALS', status=400)
+    
+    if len(new_password) < 6:
+        return error_response('New password must be at least 6 characters long', 'VALIDATION_ERROR')
+        
+    user.set_password(new_password)
+    db.session.commit()
+    return success_response(message='Password updated successfully')

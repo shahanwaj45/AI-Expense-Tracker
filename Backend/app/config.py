@@ -12,7 +12,7 @@ class Config:
     ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'pdf', 'webp'}
     GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
     AI_PROVIDER = os.environ.get('AI_PROVIDER', 'gemini')
-    AI_MODEL = os.environ.get('AI_MODEL', 'gemini-1.5-flash')
+    AI_MODEL = os.environ.get('AI_MODEL', 'gemini-3.6-flash')
     CORS_ORIGINS = ['http://localhost:3000', 'http://127.0.0.1:3000', 'http://localhost:5173']
 
 class DevelopmentConfig(Config):

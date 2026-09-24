@@ -1,4 +1,4 @@
-﻿import uuid
+import uuid
 from datetime import datetime
 from app import db
 
@@ -12,6 +12,14 @@ CATEGORY_COLORS = {
     'Shopping': 'violet',
     'Subscription': 'violet',
     'Income': 'mint',
+    'Allowance': 'mint',
+    'Pocket Money': 'mint',
+    'Salary': 'mint',
+    'Freelance': 'mint',
+    'Gift': 'mint',
+    'Stipend': 'mint',
+    'Investment': 'mint',
+    'Refund': 'mint',
     'Other': 'gray',
 }
 

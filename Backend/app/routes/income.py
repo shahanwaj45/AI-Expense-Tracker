@@ -1,6 +1,7 @@
-﻿from flask import Blueprint, request
+from flask import Blueprint, request
 from app import db
 from app.models.income_source import IncomeSource
+from app.models.transaction import Transaction
 from app.utils.auth import require_auth, require_role, get_current_user, success_response, error_response
 from datetime import datetime, date
 
@@ -59,6 +60,20 @@ def create_income():
         is_recurring=bool(data.get('is_recurring', False)),
     )
     db.session.add(s)
+
+    # Also record in transactions table so it shows across transaction history
+    tx = Transaction(
+        user_id=user.id,
+        type='income',
+        name=source,
+        amount=amount,
+        category='Income',
+        payment_method='Bank Transfer',
+        date=datetime.combine(date_received, datetime.utcnow().time()),
+        color='mint',
+        notes=f"Income source: {data.get('type', 'fixed')}"
+    )
+    db.session.add(tx)
     db.session.commit()
     return success_response(s.to_dict(), status=201)
 

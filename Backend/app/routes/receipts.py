@@ -1,4 +1,4 @@
-﻿import os
+import os
 import uuid
 from flask import Blueprint, request, current_app
 from app import db
@@ -59,15 +59,27 @@ def scan():
         'message': 'Receipt scanned successfully. Please review and confirm before saving.'
     })
 
+@receipts_bp.route('/recent', methods=['GET'])
+@require_auth
+def get_recent_scans():
+    """Get transactions created from scanned receipts, newest scans first."""
+    user = get_current_user()
+    limit = int(request.args.get('limit', 10))
+    scans = Transaction.query.filter(
+        Transaction.user_id == user.id,
+        Transaction.notes.ilike('%receipt%')
+    ).order_by(Transaction.created_at.desc()).limit(limit).all()
+    return success_response({'items': [s.to_dict() for s in scans]})
+
 @receipts_bp.route('/confirm', methods=['POST'])
 @require_auth
 def confirm():
     """Save a confirmed receipt extraction as a transaction."""
     user = get_current_user()
-    data = request.get_json()
+    data = request.get_json() or {}
     
-    name = data.get('name', data.get('merchant', 'Receipt expense')).strip()
-    category = data.get('category', 'Other')
+    name = (data.get('name') or data.get('merchant') or 'Receipt expense').strip()
+    category = data.get('category') or 'Other'
     
     try:
         amount = float(data.get('amount', 0))
@@ -76,14 +88,26 @@ def confirm():
     except (TypeError, ValueError):
         return error_response('Invalid amount')
     
+    # Date handling: if use_today is True or date_str is missing, use now
+    use_today = data.get('use_today', False)
     date_str = data.get('date')
-    if date_str:
-        try:
-            tx_date = datetime.fromisoformat(str(date_str))
-        except ValueError:
-            tx_date = datetime.utcnow()
-    else:
+    
+    if use_today or not date_str:
         tx_date = datetime.utcnow()
+    else:
+        try:
+            str_d = str(date_str).strip()
+            if len(str_d) == 10:
+                parsed_d = datetime.strptime(str_d, '%Y-%m-%d')
+                now = datetime.utcnow()
+                tx_date = datetime.combine(parsed_d.date(), now.time())
+            else:
+                tx_date = datetime.fromisoformat(str_d)
+        except Exception:
+            tx_date = datetime.utcnow()
+    
+    notes = (data.get('notes') or f"Scanned receipt ({name})").strip()
+    payment_method = data.get('payment_method') or 'UPI'
     
     tx = Transaction(
         user_id=user.id,
@@ -91,12 +115,13 @@ def confirm():
         name=name,
         amount=amount,
         category=category,
-        payment_method=data.get('payment_method', 'Other'),
+        payment_method=payment_method,
         date=tx_date,
         color=CATEGORY_COLORS.get(category, 'coral'),
-        notes=f"Scanned receipt",
+        notes=notes,
     )
     db.session.add(tx)
     db.session.commit()
     
-    return success_response(tx.to_dict(), status=201)
+    return success_response(tx.to_dict(), message="Receipt transaction saved successfully", status=201)
+

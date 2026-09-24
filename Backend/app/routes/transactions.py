@@ -1,4 +1,4 @@
-﻿from flask import Blueprint, request
+from flask import Blueprint, request
 from flask_jwt_extended import get_jwt_identity
 from datetime import datetime
 from app import db
@@ -17,7 +17,13 @@ def list_transactions():
     # Filters
     search = request.args.get('search', '').strip()
     if search:
-        query = query.filter(Transaction.name.ilike(f'%{search}%'))
+        query = query.filter(
+            db.or_(
+                Transaction.name.ilike(f'%{search}%'),
+                Transaction.notes.ilike(f'%{search}%'),
+                Transaction.category.ilike(f'%{search}%')
+            )
+        )
     
     tx_type = request.args.get('type', '')
     if tx_type in ('expense', 'income'):
@@ -30,8 +36,14 @@ def list_transactions():
     # Pagination
     page = int(request.args.get('page', 1))
     limit = int(request.args.get('limit', 50))
+    sort_by = request.args.get('sort_by', 'date')
     
-    paginated = query.order_by(Transaction.date.desc()).paginate(page=page, per_page=limit, error_out=False)
+    if sort_by == 'created_at':
+        order_clause = [Transaction.created_at.desc()]
+    else:
+        order_clause = [Transaction.date.desc(), Transaction.created_at.desc()]
+    
+    paginated = query.order_by(*order_clause).paginate(page=page, per_page=limit, error_out=False)
     
     return success_response({
         'items': [t.to_dict() for t in paginated.items],

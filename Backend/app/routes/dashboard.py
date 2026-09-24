@@ -1,4 +1,4 @@
-﻿from flask import Blueprint
+from flask import Blueprint
 from flask_jwt_extended import get_jwt
 from datetime import datetime
 from sqlalchemy import func
@@ -90,15 +90,16 @@ def student_dashboard():
     total_expense, total_income, start, end = _get_monthly_metrics(user)
     
     monthly_allowance = float(user.monthly_allowance) if user.monthly_allowance else 30000
-    remaining = monthly_allowance - total_expense
-    progress_pct = round((1 - (remaining / monthly_allowance)) * 100) if monthly_allowance > 0 else 0
+    total_funds = monthly_allowance + total_income
+    remaining = total_funds - total_expense
+    progress_pct = round((total_expense / total_funds) * 100) if total_funds > 0 else 0
     progress_pct = max(0, min(100, progress_pct))
     
     # Safe to spend per day
     days_in_month = 30
     today = datetime.utcnow().day
-    days_remaining = days_in_month - today + 1
-    safe_per_day = round(remaining / days_remaining) if days_remaining > 0 and remaining > 0 else 0
+    days_remaining = max(1, days_in_month - today + 1)
+    safe_per_day = round(remaining / days_remaining) if remaining > 0 else 0
     
     health_score = calculate_financial_health(user, db.session)
     trend_bars = get_spending_trend_bars(user.id, db.session)

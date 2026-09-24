@@ -1,4 +1,4 @@
-﻿import os
+import os
 import json
 import logging
 from datetime import datetime
@@ -53,9 +53,81 @@ def _build_financial_summary(user, db_session):
         "avg_savings_goal_progress_pct": round(avg_savings_progress, 1),
     }
 
+FALLBACK_MODELS = [
+    'gemini-3.6-flash',
+    'gemini-flash-latest',
+    'gemini-3.5-flash',
+]
+
+def _get_candidate_models():
+    configured = os.environ.get('AI_MODEL', '').strip()
+    candidates = []
+    if configured:
+        candidates.append(configured)
+    for m in FALLBACK_MODELS:
+        if m not in candidates:
+            candidates.append(m)
+    return candidates
+
+def _generate_content_text(prompt, api_key):
+    """Run text generation using google.genai with fallback to google.generativeai across candidate models."""
+    candidate_models = _get_candidate_models()
+    last_error = None
+
+    # Try modern google.genai
+    try:
+        from google import genai
+        client = genai.Client(api_key=api_key)
+        for model_name in candidate_models:
+            try:
+                res = client.models.generate_content(model=model_name, contents=prompt)
+                if res and res.text:
+                    return res.text.strip()
+            except Exception as e:
+                last_error = str(e)
+                logger.warning(f"ai_service google.genai model {model_name} failed: {e}")
+                if any(k in str(e).lower() for k in ['404', 'not found', 'no longer available', 'deprecated']):
+                    continue
+                break
+    except ImportError:
+        pass
+
+    # Try legacy google.generativeai
+    try:
+        import google.generativeai as legacy_genai
+        legacy_genai.configure(api_key=api_key)
+        for model_name in candidate_models:
+            try:
+                model = legacy_genai.GenerativeModel(model_name)
+                res = model.generate_content(prompt)
+                if res and res.text:
+                    return res.text.strip()
+            except Exception as e:
+                last_error = str(e)
+                logger.warning(f"ai_service legacy_genai model {model_name} failed: {e}")
+                if any(k in str(e).lower() for k in ['404', 'not found', 'no longer available', 'deprecated']):
+                    continue
+                break
+    except Exception as e:
+        last_error = str(e)
+
+    raise RuntimeError(last_error or "AI generation failed across all available models")
+
+def _clean_json_str(text):
+    text = text.strip()
+    import re
+    if '```' in text:
+        match = re.search(r'```(?:json)?\s*([\s\S]*?)\s*```', text, re.IGNORECASE)
+        if match:
+            text = match.group(1).strip()
+    match = re.search(r'(\{[\s\S]*\})', text)
+    if match:
+        text = match.group(1).strip()
+    return text
+
 def generate_insight(user, db_session):
     """Generate AI insight using Gemini, with fallback to static insights."""
-    api_key = os.environ.get('GEMINI_API_KEY', '')
+    api_key = os.environ.get('GEMINI_API_KEY', '').strip()
     
     if not api_key:
         logger.warning("GEMINI_API_KEY not set — using fallback insight")
@@ -64,10 +136,6 @@ def generate_insight(user, db_session):
         return fi['headline'], fi['description']
     
     try:
-        import google.generativeai as genai
-        genai.configure(api_key=api_key)
-        model = genai.GenerativeModel(os.environ.get('AI_MODEL', 'gemini-1.5-flash'))
-        
         summary = _build_financial_summary(user, db_session)
         
         prompt = f"""You are a personal finance advisor for an Indian user. Based on the following financial summary, generate ONE concise, actionable, personalised financial insight.
@@ -83,16 +151,9 @@ Financial Summary:
 Respond ONLY with valid JSON in exactly this format, no markdown:
 {{"headline": "Short catchy headline under 8 words", "description": "2-3 sentence actionable insight mentioning specific rupee amounts where relevant"}}"""
 
-        response = model.generate_content(prompt)
-        text = response.text.strip()
-        
-        # Strip markdown code blocks if present
-        if text.startswith('```'):
-            text = text.split('```')[1]
-            if text.startswith('json'):
-                text = text[4:]
-        
-        parsed = json.loads(text)
+        text = _generate_content_text(prompt, api_key)
+        cleaned_json = _clean_json_str(text)
+        parsed = json.loads(cleaned_json)
         headline = str(parsed.get('headline', ''))[:255]
         description = str(parsed.get('description', ''))[:1000]
         
@@ -109,16 +170,12 @@ Respond ONLY with valid JSON in exactly this format, no markdown:
 
 def parse_voice_expense(text):
     """Use Gemini to parse spoken text into structured expense data."""
-    api_key = os.environ.get('GEMINI_API_KEY', '')
+    api_key = os.environ.get('GEMINI_API_KEY', '').strip()
     
     if not api_key:
-        return None, "AI service not configured. Please add GEMINI_API_KEY to your .env file."
+        return None, "AI service not configured. Please add GEMINI_API_KEY to your Backend/.env file."
     
     try:
-        import google.generativeai as genai
-        genai.configure(api_key=api_key)
-        model = genai.GenerativeModel(os.environ.get('AI_MODEL', 'gemini-1.5-flash'))
-        
         prompt = f"""Extract expense information from this spoken text: "{text}"
 
 Respond ONLY with valid JSON:
@@ -128,16 +185,11 @@ Valid categories: Food, Travel, Education, Entertainment, Bills, Health, Shoppin
 If you cannot parse an amount, set amount to null.
 Do not include markdown or explanation."""
 
-        response = model.generate_content(prompt)
-        raw = response.text.strip()
-        if raw.startswith('```'):
-            raw = raw.split('```')[1]
-            if raw.startswith('json'):
-                raw = raw[4:]
-        
-        parsed = json.loads(raw)
+        raw = _generate_content_text(prompt, api_key)
+        cleaned_json = _clean_json_str(raw)
+        parsed = json.loads(cleaned_json)
         return parsed, None
         
     except Exception as e:
         logger.error(f"Voice parsing failed: {e}")
-        return None, f"Could not parse your expense. Please try again."
+        return None, f"Could not parse your expense: {e}"

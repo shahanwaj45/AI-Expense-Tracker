@@ -22,6 +22,7 @@ const FALLBACK_SAVINGS_GOAL = { name: "No goals yet", current: 0, target: 0, per
 
 export default function ProfessionalDashboard() {
   const [showAdd, setShowAdd] = useState(false);
+  const [modalType, setModalType] = useState<"expense" | "income">("expense");
   const [, navigate] = useLocation();
   const { user } = useAuth();
   const { data, loading, refetch } = useDashboard("professional");
@@ -49,13 +50,22 @@ export default function ProfessionalDashboard() {
             Monitor your income, optimise spending, and let AI guide your financial future.
           </p>
         </div>
-        <Button
-          onClick={() => setShowAdd(true)}
-          className="group h-11 rounded-xl bg-[#172532] px-4 text-[12px] font-bold text-white shadow-[6px_8px_18px_rgba(23,37,50,.14)] transition hover:-translate-y-0.5 hover:bg-[#243b4a]"
-        >
-          <Plus size={17} className="mr-2 text-[#7BE2BE] transition group-hover:rotate-90" />
-          Add expense
-        </Button>
+        <div className="flex items-center gap-2.5">
+          <Button
+            onClick={() => { setModalType("income"); setShowAdd(true); }}
+            className="h-11 rounded-xl bg-[#2b7256] px-4 text-[12px] font-bold text-white shadow-[0_4px_14px_rgba(43,114,86,.3)] transition hover:-translate-y-0.5 hover:bg-[#235d46]"
+          >
+            <Plus size={16} className="mr-1.5 text-[#7BE2BE]" />
+            Add Income Received
+          </Button>
+          <Button
+            onClick={() => { setModalType("expense"); setShowAdd(true); }}
+            className="group h-11 rounded-xl bg-[#172532] px-4 text-[12px] font-bold text-white shadow-[6px_8px_18px_rgba(23,37,50,.14)] transition hover:-translate-y-0.5 hover:bg-[#243b4a]"
+          >
+            <Plus size={17} className="mr-1.5 text-[#7BE2BE] transition group-hover:rotate-90" />
+            Add Expense
+          </Button>
+        </div>
       </div>
 
       {loading ? (
@@ -98,8 +108,12 @@ export default function ProfessionalDashboard() {
         <div className="mt-10 text-center text-[#82908a]">Failed to load dashboard. Please try again.</div>
       )}
 
-      {/* ── Add expense modal ── */}
-      <AddExpenseModal open={showAdd} onClose={() => { setShowAdd(false); refetch(); }} />
+      {/* ── Add transaction modal ── */}
+      <AddExpenseModal
+        open={showAdd}
+        onClose={() => { setShowAdd(false); refetch(); }}
+        initialType={modalType}
+      />
 
       {/* ── Mobile FAB ── */}
       <button
